@@ -2,7 +2,7 @@ from difficulty import Difficulty
 
 
 class Button:
-    def __init__(self, create_font, text: Difficulty, position: tuple):
+    def __init__(self, create_font, text: Difficulty, is_selected: bool, position: tuple):
         self.btn_w = 100
         self.btn_h = 50
         self.font = create_font(20)
@@ -12,7 +12,7 @@ class Button:
         self.color_selected = "blue"
         self.x = position[0]
         self.y = position[1]
-        self.selected = True if Difficulty(text) == Difficulty.EASY else False
+        self.selected = is_selected
         print(self.selected)
         print(self.text)
 
@@ -29,8 +29,7 @@ class Button:
         x, y = position
         return self.x <= x <= self.x + self.btn_w and self.y <= y <= self.y + self.btn_h
 
-    def on_click(self, pygame) -> Difficulty:
-        print(self)
+    def on_click(self) -> Difficulty:
         self.selected = True
         return Difficulty(self.value)
 
@@ -50,3 +49,4 @@ class Button:
                 self.y + (self.btn_h - text_surface.get_height()) / 2,
             ),
         )
+        

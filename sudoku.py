@@ -22,6 +22,7 @@ while running:
             grid.handle_grid_click(pygame, surface)
         if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0] and pygame.mouse.get_pos()[0] > 450:
             grid.handle_button_click(pygame, surface)
+
         if event.type == pygame.KEYDOWN:
             grid.handle_keypress(pygame, event.key)
 

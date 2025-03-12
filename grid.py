@@ -79,8 +79,8 @@ def create_line_coordinates(
 
 
 class Grid:
-    def __init__(self, create_font):
-        self.difficulty = Difficulty.EASY
+    def __init__(self, create_font, difficulty: Difficulty = Difficulty.EASY):
+        self.difficulty = difficulty
         self.cell_size = 50
         self.line_coordinates = create_line_coordinates(
             self.cell_size, (0, 10), (0, 10)
@@ -90,19 +90,23 @@ class Grid:
         self.grid, self.empty_cells = remove_numbers(
             self.grid_complete, self.numbers_to_remove
         )
-        self.font = create_font(30)
+        self.create_font = create_font
+        self.font = self.create_font(30)
         self.x_offset = 0.5 * self.cell_size - 8
         self.y_offset = 0.5 * self.cell_size - 22
         self.clicked_cell = None
         self.highlighted_coords = None
         self.difficulty_buttons = self.__create_buttons(create_font)
 
+    def get_difficulty(self) -> Difficulty:
+        return self.difficulty
+
     def __create_buttons(self, font_lambda):
         buttons = []
         for index, difficulty in enumerate(
             [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD]
         ):
-            button = Button(font_lambda, difficulty.value, (500, 100 + index * 100))
+            button = Button(font_lambda, difficulty.value, difficulty == self.difficulty, (500, 100 + index * 100))
             buttons.append(button)
         return buttons
 
@@ -173,8 +177,10 @@ class Grid:
         for button in self.difficulty_buttons:
             button.set_selected(False)
             if button.has_been_clicked(pos):
-                self.difficulty = button.on_click(pygame)
-
+                prev_difficulty = self.get_difficulty()
+                new_difficulty = button.on_click()
+                if(prev_difficulty != new_difficulty):
+                    self.restart(new_difficulty)
 
     def handle_grid_click(self, pygame, surface):
         pos = pygame.mouse.get_pos()
@@ -204,6 +210,9 @@ class Grid:
             self.set_cell(
                 pygame.key.name(key), self.clicked_cell[0], self.clicked_cell[1]
             )
+
+    def restart(self, difficulty: Difficulty):
+        self.__init__(self.create_font, difficulty)
 
     def show(self):
         for cell in self.grid_complete:
