@@ -41,7 +41,7 @@ def create_grid(sub_grid: int) -> list[list]:
 def get_removal_coords(coords_list: list[tuple]) -> tuple:
     x = sample(range(GRID_SIZE), 1)[0]
     y = sample(range(GRID_SIZE), 1)[0]
-    coords = (y, x)
+    coords = (x, y)
     if not coords in coords_list:
         return coords
     else:
@@ -53,24 +53,30 @@ def remove_numbers(grid: list[list], numbers_to_remove: int) -> list[list]:
     for _ in range(numbers_to_remove):
         coords = get_removal_coords(coords_list)
         coords_list.append(coords)
-        y, x = coords
+        x, y = coords
         grid[y][x] = 0
     return [grid, coords_list]
 
 
-def create_line_coordinates(cell_size: int):
+def create_line_coordinates(
+    cell_size: int,
+    lines_x_start_end: tuple[int, int],
+    lines_y_start_end: tuple[int, int],
+) -> list[list[tuple]]:
     coords = []
+    range_x = range(lines_x_start_end[0], lines_x_start_end[1])
+    range_y = range(lines_y_start_end[0], lines_y_start_end[1])
 
-    for x in range(1, 10):
+    for x in range_x:
         coords_x = []
-        coords_x.append((x * cell_size, 0))
-        coords_x.append((x * cell_size, 500))
+        coords_x.append((x * cell_size, range_y[0] * cell_size))
+        coords_x.append((x * cell_size, range_y[-1] * cell_size))
         coords.append(coords_x)
 
-    for y in range(1, 9):
+    for y in range_y:
         coords_y = []
-        coords_y.append((0, y * cell_size))
-        coords_y.append((450, y * cell_size))
+        coords_y.append((range_x[0] * cell_size, y * cell_size))
+        coords_y.append((range_x[-1] * cell_size, y * cell_size))
         coords.append(coords_y)
 
     print(coords)
@@ -80,7 +86,10 @@ def create_line_coordinates(cell_size: int):
 class Grid:
     def __init__(self, font, difficulty: Difficulty):
         self.cell_size = 50
-        self.line_coordinates = create_line_coordinates(self.cell_size)
+        self.line_coordinates = create_line_coordinates(
+            self.cell_size, (0, 10), (0, 10)
+        )
+        print(self.line_coordinates)
         self.numbers_to_remove = self.__set_numbers_to_remove(difficulty)
         self.grid_complete = create_grid(SUB_GRID_SIZE)
         self.grid, self.empty_cells = remove_numbers(
@@ -90,6 +99,7 @@ class Grid:
         self.x_offset = 0.5 * self.cell_size - 8
         self.y_offset = 0.5 * self.cell_size - 22
         self.clicked_cell = None
+        self.highlighted_coords = None
 
     def __set_numbers_to_remove(self, difficulty: Difficulty):
         match difficulty:
@@ -103,8 +113,18 @@ class Grid:
     def __draw_lines(self, pygame, surface):
         for index, line in enumerate(self.line_coordinates):
             pygame.draw.line(surface, (50, 50, 50), line[0], line[1])
-            if index == 2 or index == 5 or index == 11 or index == 14:
+            if index == 3 or index == 6 or index == 13 or index == 16:
                 pygame.draw.line(surface, "white", line[0], line[1])
+        if self.highlighted_coords:
+            for line in self.highlighted_coords:
+                pygame.draw.line(surface, "blue", line[0], line[1])
+
+    def __draw_squares(self, pygame, surface):
+        for x in range(0,9):
+            for y in range (0,9):
+                cell = (x, y)
+                if cell in self.empty_cells:
+                    pygame.draw.rect(surface, (30, 30, 30), (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
 
     def __draw_numbers(self, surface):
         for y in range(len(self.grid_complete)):
@@ -128,29 +148,38 @@ class Grid:
         self.grid_complete[y][x] = value
 
     def draw(self, pygame, surface):
+        self.__draw_squares(pygame, surface)
         self.__draw_lines(pygame, surface)
         self.__draw_numbers(surface)
 
-    def handle_mouse_click(self, pygame):
+    def handle_mouse_click(self, pygame, surface):
         pos = pygame.mouse.get_pos()
-        print(pos)
         x, y = pos
         if x <= 450:
-            clicked_cell = (y // 50, x // 50)
-            print(self.empty_cells)
+            clicked_cell = (x // 50, y // 50)
             print(clicked_cell)
             if clicked_cell in self.empty_cells:
-              self.clicked_cell = clicked_cell
-              # self.highlight_clicked_cell
-              print(clicked_cell)
+                self.clicked_cell = clicked_cell
+                self.__highlight_clicked_cell(pygame, surface)
 
-    # def __highlight_clicked_cell(self, pygame, surface):
-        
+    def __highlight_clicked_cell(self, pygame, surface):
+        if self.clicked_cell:
+            coords = create_line_coordinates(
+                self.cell_size,
+                (self.clicked_cell[0], self.clicked_cell[0] + 2),
+                (self.clicked_cell[1], self.clicked_cell[1] + 2),
+            )
+            self.highlighted_coords = coords
+
     def handle_keypress(self, pygame, key):
-        print(pygame.key.name(key))
-        if self.clicked_cell and int(pygame.key.name(key)) and 1 <= int(pygame.key.name(key)) <= 9:
-            self.set_cell(pygame.key.name(key), self.clicked_cell[1], self.clicked_cell[0])
-        
+        if (
+            self.clicked_cell
+            and int(pygame.key.name(key))
+            and 1 <= int(pygame.key.name(key)) <= 9
+        ):
+            self.set_cell(
+                pygame.key.name(key), self.clicked_cell[0], self.clicked_cell[1]
+            )
 
     def show(self):
         for cell in self.grid_complete:
