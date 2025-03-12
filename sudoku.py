@@ -1,28 +1,6 @@
 import pygame
-from grid import Grid, Difficulty
-
-difficulty = Difficulty.EASY
-
-
-def get_difficulty():
-    global difficulty
-    difficulty_input = input(
-        "Select difficulty - easy / medium / hard. (Default is easy): "
-    )
-    print(difficulty_input)
-
-    if difficulty_input in Difficulty._value2member_map_:
-        difficulty = Difficulty(difficulty_input)
-    else:
-        repeat = input(
-            "Invalid difficulty. Do you want to select difficulty again? y / n: "
-        )
-        if repeat == "y":
-            get_difficulty()
-
-
-get_difficulty()
-
+from grid import Grid
+from difficulty import Difficulty
 
 pygame.init()
 surface = pygame.display.set_mode((600, 450))
@@ -30,9 +8,9 @@ pygame.display.set_caption("Sudoku")
 clock = pygame.time.Clock()
 player_pos = pygame.Vector2(surface.get_width() / 2, surface.get_height() / 2)
 pygame.font.init()
-font = pygame.font.SysFont("Comic Sans MS", 30)
+font_lambda = lambda font_size: pygame.font.SysFont("Comic Sans MS", font_size)
 dt = 0
-grid = Grid(font, difficulty)
+grid = Grid(font_lambda)
 
 running = True
 
@@ -40,8 +18,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0]:
-            grid.handle_mouse_click(pygame, surface)
+        if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0] and pygame.mouse.get_pos()[0] <= 450:
+            grid.handle_grid_click(pygame, surface)
+        if event.type == pygame.MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[0] and pygame.mouse.get_pos()[0] > 450:
+            grid.handle_button_click(pygame, surface)
         if event.type == pygame.KEYDOWN:
             grid.handle_keypress(pygame, event.key)
 

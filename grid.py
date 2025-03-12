@@ -1,17 +1,12 @@
 from random import sample
-from enum import Enum
+from button import Button
+from difficulty import Difficulty
 
 SUB_GRID_SIZE = 3
 GRID_SIZE = SUB_GRID_SIZE * SUB_GRID_SIZE
 NUMBERS_TO_REMOVE_EASY = 30
 NUMBERS_TO_REMOVE_MEDIUM = 50
 NUMBERS_TO_REMOVE_HARD = 64
-
-
-class Difficulty(Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
 
 
 # pattern for a baseline valid solution
@@ -84,22 +79,32 @@ def create_line_coordinates(
 
 
 class Grid:
-    def __init__(self, font, difficulty: Difficulty):
+    def __init__(self, create_font):
+        self.difficulty = Difficulty.EASY
         self.cell_size = 50
         self.line_coordinates = create_line_coordinates(
             self.cell_size, (0, 10), (0, 10)
         )
-        print(self.line_coordinates)
-        self.numbers_to_remove = self.__set_numbers_to_remove(difficulty)
+        self.numbers_to_remove = self.__set_numbers_to_remove(self.difficulty)
         self.grid_complete = create_grid(SUB_GRID_SIZE)
         self.grid, self.empty_cells = remove_numbers(
             self.grid_complete, self.numbers_to_remove
         )
-        self.font = font
+        self.font = create_font(30)
         self.x_offset = 0.5 * self.cell_size - 8
         self.y_offset = 0.5 * self.cell_size - 22
         self.clicked_cell = None
         self.highlighted_coords = None
+        self.difficulty_buttons = self.__create_buttons(create_font)
+
+    def __create_buttons(self, font_lambda):
+        buttons = []
+        for index, difficulty in enumerate(
+            [Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD]
+        ):
+            button = Button(font_lambda, difficulty.value, (500, 100 + index * 100))
+            buttons.append(button)
+        return buttons
 
     def __set_numbers_to_remove(self, difficulty: Difficulty):
         match difficulty:
@@ -120,11 +125,20 @@ class Grid:
                 pygame.draw.line(surface, "blue", line[0], line[1])
 
     def __draw_squares(self, pygame, surface):
-        for x in range(0,9):
-            for y in range (0,9):
+        for x in range(0, 9):
+            for y in range(0, 9):
                 cell = (x, y)
                 if cell in self.empty_cells:
-                    pygame.draw.rect(surface, (30, 30, 30), (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
+                    pygame.draw.rect(
+                        surface,
+                        (30, 30, 30),
+                        (
+                            x * self.cell_size,
+                            y * self.cell_size,
+                            self.cell_size,
+                            self.cell_size,
+                        ),
+                    )
 
     def __draw_numbers(self, surface):
         for y in range(len(self.grid_complete)):
@@ -151,8 +165,18 @@ class Grid:
         self.__draw_squares(pygame, surface)
         self.__draw_lines(pygame, surface)
         self.__draw_numbers(surface)
+        for button in self.difficulty_buttons:
+            button.draw(pygame, surface)
 
-    def handle_mouse_click(self, pygame, surface):
+    def handle_button_click(self, pygame, surface):
+        pos = pygame.mouse.get_pos()
+        for button in self.difficulty_buttons:
+            button.set_selected(False)
+            if button.has_been_clicked(pos):
+                self.difficulty = button.on_click(pygame)
+
+
+    def handle_grid_click(self, pygame, surface):
         pos = pygame.mouse.get_pos()
         x, y = pos
         if x <= 450:
